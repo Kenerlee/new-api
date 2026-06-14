@@ -1069,3 +1069,9 @@ func RootUserExists() bool {
 	}
 	return true
 }
+
+func UserExists() bool {
+	var user User
+	err := DB.Select("id").First(&user).Error
+	return err == nil
+}

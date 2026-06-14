@@ -91,9 +91,10 @@ func createRootAccountIfNeed() error {
 func CheckSetup() {
 	setup := GetSetup()
 	if setup == nil {
-		// No setup record exists, check if we have a root user
-		if RootUserExists() {
-			common.SysLog("system is not initialized, but root user exists")
+		// No setup record exists. Existing deployments created before the setup
+		// marker may still have users, so treat any user as initialized.
+		if UserExists() {
+			common.SysLog("system setup record is missing, but users exist")
 			// Create setup record
 			newSetup := Setup{
 				Version:       common.Version,
