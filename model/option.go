@@ -15,6 +15,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	legacyDefaultServerAddress  = "http://localhost:3000"
+	currentDefaultServerAddress = "https://api.moments.top"
+)
+
 type Option struct {
 	Key   string `json:"key" gorm:"primaryKey"`
 	Value string `json:"value"`
@@ -182,6 +187,7 @@ func InitOptionMap() {
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
+	migrateLegacyServerAddress()
 }
 
 func loadOptionsFromDatabase() {
@@ -192,6 +198,24 @@ func loadOptionsFromDatabase() {
 			common.SysLog("failed to update option map: " + err.Error())
 		}
 	}
+}
+
+func migrateLegacyServerAddress() {
+	var option Option
+	err := DB.Where(&Option{
+		Key: "ServerAddress",
+	}).First(&option).Error
+	if err != nil {
+		return
+	}
+	if strings.TrimRight(option.Value, "/") != legacyDefaultServerAddress {
+		return
+	}
+	if err := UpdateOption("ServerAddress", currentDefaultServerAddress); err != nil {
+		common.SysLog("failed to migrate legacy ServerAddress: " + err.Error())
+		return
+	}
+	common.SysLog("migrated legacy ServerAddress to " + currentDefaultServerAddress)
 }
 
 func SyncOptions(frequency int) {
